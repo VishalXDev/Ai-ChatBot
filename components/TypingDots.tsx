@@ -3,38 +3,55 @@ import React from "react";
 import { motion } from "framer-motion";
 import { CpuChipIcon } from "@heroicons/react/24/outline";
 
-export const TypingDots = () => {
+interface TypingDotsProps {
+  isDarkMode: boolean;
+}
+
+export const TypingDots: React.FC<TypingDotsProps> = ({ isDarkMode }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="w-full flex justify-start mb-6"
+      className="flex justify-start mb-6"
     >
-      <div className="max-w-xs md:max-w-2xl flex items-start space-x-3">
+      <div className="max-w-[85%] md:max-w-[70%] flex items-start gap-3">
         {/* Avatar */}
-        <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-r from-cyan-500 to-blue-500 border-2 border-cyan-400/50 shadow-lg">
-          <CpuChipIcon className="w-5 h-5 text-white" />
+        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+          isDarkMode
+            ? 'bg-gray-800 border border-gray-600 text-gray-300'
+            : 'bg-white border border-gray-200 text-gray-600 shadow-sm'
+        }`}>
+          <CpuChipIcon className="w-4 h-4" />
         </div>
 
-        {/* Typing indicator */}
-        <div className="relative">
+        {/* Typing Content */}
+        <div className="flex flex-col items-start">
+          {/* Sender label */}
+          <div className={`text-xs mb-1 transition-colors ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+          }`}>
+            ChatGPT
+          </div>
+          
+          {/* Typing indicator */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="px-6 py-4 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur-sm border border-cyan-400/30 rounded-2xl rounded-bl-md shadow-xl"
+            className={`px-4 py-3 rounded-2xl rounded-bl-md transition-all ${
+              isDarkMode
+                ? 'bg-gray-800 border border-gray-700'
+                : 'bg-white border border-gray-200 shadow-sm'
+            }`}
           >
-            {/* Pulsing glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-2xl blur-xl animate-pulse" />
-            
-            {/* Typing dots */}
-            <div className="relative z-10 flex items-center space-x-2">
-              <span className="text-cyan-300 text-sm font-medium">NEXUS is thinking</span>
+            <div className="flex items-center space-x-2">
               <div className="flex space-x-1">
                 {[0, 1, 2].map((i) => (
                   <motion.div
                     key={i}
-                    className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full"
+                    className={`w-2 h-2 rounded-full ${
+                      isDarkMode ? 'bg-gray-400' : 'bg-gray-500'
+                    }`}
                     animate={{
                       scale: [1, 1.2, 1],
                       opacity: [0.5, 1, 0.5],
@@ -49,26 +66,7 @@ export const TypingDots = () => {
                 ))}
               </div>
             </div>
-
-            {/* Neural network visualization */}
-            <div className="absolute -top-1 -right-1 w-4 h-4">
-              <motion.div
-                className="w-full h-full border border-cyan-400/40 rounded-full"
-                animate={{
-                  scale: [1, 1.5, 1],
-                  opacity: [0.3, 0.8, 0.3],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            </div>
           </motion.div>
-
-          {/* Message tail */}
-          <div className="absolute top-4 -left-1 w-3 h-3 bg-gradient-to-br from-gray-800 to-gray-900 transform rotate-45" />
         </div>
       </div>
     </motion.div>

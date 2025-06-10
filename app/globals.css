@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 
 :root {
   --bg-primary: #ffffff;
@@ -16,6 +16,8 @@
   --accent-hover: #0d8c6c;
   --user-bg: #10a37f;
   --assistant-bg: transparent;
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.07);
 }
 
 [data-theme="dark"] {
@@ -30,6 +32,8 @@
   --accent-hover: #0d8c6c;
   --user-bg: #10a37f;
   --assistant-bg: transparent;
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 * {
@@ -38,6 +42,7 @@
 
 html {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  height: 100%;
 }
 
 body {
@@ -48,6 +53,8 @@ body {
   font-size: 14px;
   line-height: 1.6;
   transition: background-color 0.2s ease, color 0.2s ease;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Custom scrollbar */
@@ -66,6 +73,12 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-light) transparent;
 }
 
 /* Selection styling */
@@ -89,8 +102,14 @@ textarea:focus-visible {
 
 /* Animation utilities */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { 
+    opacity: 0; 
+    transform: translateY(8px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
 }
 
 @keyframes pulse {
@@ -104,6 +123,17 @@ textarea:focus-visible {
   100% { transform: translateY(0); }
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
 }
@@ -114,4 +144,125 @@ textarea:focus-visible {
 
 .animate-typing {
   animation: typing 1.4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+  background-size: 200% 200%;
+}
+
+/* Utility classes */
+.glass-effect {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.text-gradient {
+  background: linear-gradient(45deg, var(--accent-primary), #06b6d4);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Chat specific styles */
+.message-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+  margin: 1em 0 0.5em 0;
+  font-weight: 600;
+}
+
+.message-content p {
+  margin: 0.5em 0;
+}
+
+.message-content ul,
+.message-content ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.message-content li {
+  margin: 0.25em 0;
+}
+
+.message-content code {
+  background-color: var(--bg-tertiary);
+  padding: 0.125em 0.25em;
+  border-radius: 0.25em;
+  font-size: 0.875em;
+  font-family: 'Courier New', monospace;
+}
+
+.message-content pre {
+  background-color: var(--bg-tertiary);
+  padding: 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.message-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.message-content blockquote {
+  border-left: 3px solid var(--accent-primary);
+  padding-left: 1em;
+  margin: 0.5em 0;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+/* Loading states */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-tertiary) 50%, var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .message-content {
+    font-size: 14px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-light: #000000;
+    --text-muted: #333333;
+  }
+  
+  [data-theme="dark"] {
+    --border-light: #ffffff;
+    --text-muted: #cccccc;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
