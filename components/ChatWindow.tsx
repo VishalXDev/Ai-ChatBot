@@ -12,7 +12,9 @@ import {
   MoonIcon,
   BoltIcon,
   SparklesIcon,
-  CpuChipIcon
+  CpuChipIcon,
+  ClipboardDocumentIcon,
+  ArrowDownIcon
 } from "@heroicons/react/24/outline";
 
 interface ChatMessage {
@@ -28,11 +30,21 @@ export const ChatWindow = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    }
   };
 
   useEffect(() => {
@@ -55,7 +67,7 @@ export const ChatWindow = () => {
     const userMessage: ChatMessage = { 
       id: generateId(),
       sender: "user", 
-      message: input,
+      message: input.trim(),
       timestamp: new Date()
     };
     
@@ -63,41 +75,67 @@ export const ChatWindow = () => {
     setInput("");
     setIsTyping(true);
 
+    // Auto-resize textarea
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: userMessage.message }),
       });
 
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       const botMessage: ChatMessage = { 
         id: generateId(),
         sender: "bot", 
-        message: data.reply,
+        message: data.reply || "I'm sorry, I couldn't generate a response.",
         timestamp: new Date()
       };
 
-      // Simulate realistic typing delay
+      // Simulate realistic typing delay based on message length
+      const typingDelay = Math.min(Math.max(data.reply?.length * 20, 1000), 3000);
       setTimeout(() => {
         setMessages((prev) => [...prev, botMessage]);
         setIsTyping(false);
-      }, 1000 + Math.random() * 2000);
+      }, typingDelay);
     } catch (err) {
       console.error("Chat error:", err);
       const errorMessage: ChatMessage = {
         id: generateId(),
         sender: "bot",
-        message: "⚠️ Connection lost. Attempting to reconnect...",
+        message: "⚠️ I'm having trouble connecting right now. Please try again in a moment.",
         timestamp: new Date()
       };
-      setMessages((prev) => [...prev, errorMessage]);
-      setIsTyping(false);
+      setTimeout(() => {
+        setMessages((prev) => [...prev, errorMessage]);
+        setIsTyping(false);
+      }, 1000);
     }
   };
 
   const clearChat = () => {
     setMessages([]);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // You could add a toast notification here
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -107,28 +145,60 @@ export const ChatWindow = () => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    
+    // Auto-resize textarea
+    const textarea = e.target;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+  };
+
+  const suggestedPrompts = [
+    "Explain quantum computing in simple terms",
+    "Write a creative story about AI",
+    "Help me debug this code",
+    "Plan a healthy meal for today",
+    "Explain the latest in technology",
+    "Write a professional email"
+  ];
+
   return (
-    <div className="relative h-screen flex flex-col overflow-hidden">
+    <div className={`relative h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
+      isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
+    }`}>
       {/* Header */}
       <motion.div 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="relative z-10 bg-black/20 backdrop-blur-xl border-b border-cyan-500/30 p-4"
+        className={`relative z-10 backdrop-blur-xl border-b p-4 transition-colors duration-300 ${
+          isDarkMode 
+            ? 'bg-gray-900/80 border-gray-700' 
+            : 'bg-white/80 border-gray-200'
+        }`}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <CpuChipIcon className="w-8 h-8 text-cyan-400" />
+              <CpuChipIcon className={`w-8 h-8 transition-colors ${
+                isDarkMode ? 'text-emerald-400' : 'text-emerald-600'
+              }`} />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-[Orbitron]">
-                NEXUS AI
+              <h1 className={`text-2xl font-bold font-[Orbitron] transition-colors ${
+                isDarkMode 
+                  ? 'text-white' 
+                  : 'text-gray-900'
+              }`}>
+                ChatGPT
               </h1>
               <div className="flex items-center space-x-2 text-xs">
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
-                <span className="text-gray-400">
-                  {isConnected ? 'Neural Network Active' : 'Reconnecting...'}
+                <span className={`transition-colors ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  {isConnected ? 'GPT-3.5 Turbo' : 'Reconnecting...'}
                 </span>
               </div>
             </div>
@@ -139,24 +209,37 @@ export const ChatWindow = () => {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-cyan-500/30 transition-colors"
+              className={`p-2 rounded-lg border transition-colors ${
+                isDarkMode
+                  ? 'bg-gray-800/50 hover:bg-gray-700/50 border-gray-600'
+                  : 'bg-gray-100/50 hover:bg-gray-200/50 border-gray-300'
+              }`}
             >
-              {isDarkMode ? <SunIcon className="w-5 h-5 text-yellow-400" /> : <MoonIcon className="w-5 h-5 text-purple-400" />}
+              {isDarkMode ? 
+                <SunIcon className="w-5 h-5 text-yellow-400" /> : 
+                <MoonIcon className="w-5 h-5 text-gray-600" />
+              }
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={clearChat}
-              className="p-2 bg-red-900/30 hover:bg-red-800/50 rounded-lg border border-red-500/30 transition-colors"
+              className="p-2 bg-red-100/50 hover:bg-red-200/50 rounded-lg border border-red-300 transition-colors"
             >
-              <TrashIcon className="w-5 h-5 text-red-400" />
+              <TrashIcon className="w-5 h-5 text-red-500" />
             </motion.button>
           </div>
         </div>
       </motion.div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-transparent to-purple-900/10">
+      <div 
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className={`flex-1 overflow-y-auto p-4 space-y-4 transition-colors duration-300 ${
+          isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
+        }`}
+      >
         <div className="max-w-4xl mx-auto">
           <AnimatePresence>
             {messages.length === 0 && (
@@ -166,31 +249,41 @@ export const ChatWindow = () => {
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="text-center py-12"
               >
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-full mb-6">
-                  <SparklesIcon className="w-10 h-10 text-cyan-400" />
+                <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 ${
+                  isDarkMode 
+                    ? 'bg-gradient-to-r from-emerald-500/20 to-blue-500/20' 
+                    : 'bg-gradient-to-r from-emerald-500/10 to-blue-500/10'
+                }`}>
+                  <SparklesIcon className="w-10 h-10 text-emerald-500" />
                 </div>
-                <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text mb-2">
-                  Welcome to NEXUS AI
+                <h2 className={`text-3xl font-bold mb-2 transition-colors ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  How can I help you today?
                 </h2>
-                <p className="text-gray-400 max-w-md mx-auto">
-                  Your advanced AI companion is ready. Ask me anything - from complex questions to creative challenges.
+                <p className={`max-w-md mx-auto mb-8 transition-colors ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  I'm here to help with questions, creative projects, analysis, and more.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 max-w-2xl mx-auto">
-                  {[
-                    { icon: BoltIcon, text: "Lightning-fast responses", color: "from-yellow-400 to-orange-400" },
-                    { icon: CpuChipIcon, text: "Advanced reasoning", color: "from-cyan-400 to-blue-400" },
-                    { icon: SparklesIcon, text: "Creative solutions", color: "from-purple-400 to-pink-400" }
-                  ].map((feature, i) => (
-                    <motion.div
+                
+                {/* Suggested Prompts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl mx-auto">
+                  {suggestedPrompts.map((prompt, i) => (
+                    <motion.button
                       key={i}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }}
-                      className="p-4 bg-white/5 rounded-xl border border-white/10 backdrop-blur-sm"
+                      onClick={() => setInput(prompt)}
+                      className={`p-4 rounded-xl border text-left transition-all hover:scale-105 ${
+                        isDarkMode
+                          ? 'bg-gray-800/50 border-gray-700 hover:bg-gray-700/50 text-gray-300'
+                          : 'bg-white/50 border-gray-200 hover:bg-white text-gray-700'
+                      }`}
                     >
-                      <feature.icon className={`w-6 h-6 mb-2 bg-gradient-to-r ${feature.color} bg-clip-text text-transparent`} />
-                      <p className="text-sm text-gray-300">{feature.text}</p>
-                    </motion.div>
+                      <p className="text-sm">{prompt}</p>
+                    </motion.button>
                   ))}
                 </div>
               </motion.div>
@@ -198,34 +291,72 @@ export const ChatWindow = () => {
           </AnimatePresence>
 
           {messages.map((msg) => (
-            <MessageBubble key={msg.id} sender={msg.sender} message={msg.message} timestamp={msg.timestamp} />
+            <MessageBubble 
+              key={msg.id} 
+              sender={msg.sender} 
+              message={msg.message} 
+              timestamp={msg.timestamp}
+              isDarkMode={isDarkMode}
+              onCopy={() => copyToClipboard(msg.message)}
+            />
           ))}
           
-          {isTyping && <TypingDots />}
+          {isTyping && <TypingDots isDarkMode={isDarkMode} />}
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* Scroll to bottom button */}
+      <AnimatePresence>
+        {showScrollButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={scrollToBottom}
+            className={`fixed bottom-24 right-8 p-3 rounded-full shadow-lg z-20 transition-colors ${
+              isDarkMode
+                ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                : 'bg-white hover:bg-gray-50 text-gray-900 border'
+            }`}
+          >
+            <ArrowDownIcon className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Input Area */}
       <motion.div 
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="relative z-10 bg-black/20 backdrop-blur-xl border-t border-cyan-500/30 p-4"
+        className={`relative z-10 backdrop-blur-xl border-t p-4 transition-colors duration-300 ${
+          isDarkMode 
+            ? 'bg-gray-900/80 border-gray-700' 
+            : 'bg-white/80 border-gray-200'
+        }`}
       >
         <div className="max-w-4xl mx-auto">
           <div className="relative flex items-end space-x-4">
             <div className="flex-1 relative">
-              <input
+              <textarea
                 ref={inputRef}
-                className="w-full p-4 pr-12 bg-white/5 border border-cyan-500/30 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 backdrop-blur-sm transition-all"
+                className={`w-full p-4 pr-12 rounded-2xl resize-none transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
+                  isDarkMode
+                    ? 'bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:border-emerald-500'
+                    : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500 focus:border-emerald-500'
+                }`}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
-                placeholder="Enter your message... (Press Enter to send)"
+                placeholder="Message ChatGPT..."
                 disabled={isTyping}
+                rows={1}
+                style={{ minHeight: '56px', maxHeight: '200px' }}
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                {input.length}/1000
+              <div className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {input.length > 500 && `${input.length}/4000`}
               </div>
             </div>
             <motion.button
@@ -233,17 +364,17 @@ export const ChatWindow = () => {
               whileTap={{ scale: 0.95 }}
               onClick={sendMessage}
               disabled={!input.trim() || isTyping}
-              className="p-4 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-cyan-500/25"
+              className="p-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-emerald-500/25"
             >
               <PaperAirplaneIcon className="w-5 h-5" />
             </motion.button>
           </div>
           
-          {/* Stats */}
-          <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-            <span>{messages.length} messages</span>
-            <span>Made by Vishal Dwivedy 🚀</span>
-            <span>Powered by GPT</span>
+          {/* Footer */}
+          <div className={`flex justify-center items-center mt-2 text-xs transition-colors ${
+            isDarkMode ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            <span>ChatGPT can make mistakes. Consider checking important information.</span>
           </div>
         </div>
       </motion.div>
