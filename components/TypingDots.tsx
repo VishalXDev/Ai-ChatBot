@@ -1,72 +1,115 @@
-// components/TypingDots.tsx
+// components/MessageBubble.tsx
 import React from "react";
+import { ClipboardIcon, CpuChipIcon, UserIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
-import { CpuChipIcon } from "@heroicons/react/24/outline";
+import ReactMarkdown from "react-markdown";
 
-interface TypingDotsProps {
+interface MessageBubbleProps {
+  role: "user" | "assistant";
+  content: string;
   isDarkMode: boolean;
+  timestamp?: Date;
 }
 
-export const TypingDots: React.FC<TypingDotsProps> = ({ isDarkMode }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({
+  role,
+  content,
+  isDarkMode,
+  timestamp,
+}) => {
+  const isUser = role === "user";
+
+  const copyToClipboard = async () => {
+    await navigator.clipboard.writeText(content);
+  };
+
+  // Function to escape HTML characters
+  const escapeHtml = (unsafe: string) => {
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
+  const escapedContent = escapeHtml(content);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="flex justify-start mb-6"
+      className={`flex mb-6 ${isUser ? "justify-end" : "justify-start"}`}
     >
-      <div className="max-w-[85%] md:max-w-[70%] flex items-start gap-3">
+      <div className={`max-w-[85%] md:max-w-[70%] flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
         {/* Avatar */}
-        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-          isDarkMode
-            ? 'bg-gray-800 border border-gray-600 text-gray-300'
-            : 'bg-white border border-gray-200 text-gray-600 shadow-sm'
-        }`}>
-          <CpuChipIcon className="w-4 h-4" />
+        <div
+          className={`w-8 h-8 flex items-center justify-center rounded-full border text-sm ${
+            isDarkMode
+              ? "border-gray-700"
+              : "border-gray-200 shadow-sm bg-white text-gray-600"
+          }`}
+        >
+          {isUser ? (
+            <UserIcon className="w-4 h-4" />
+          ) : (
+            <CpuChipIcon className="w-4 h-4" />
+          )}
         </div>
 
-        {/* Typing Content */}
-        <div className="flex flex-col items-start">
-          {/* Sender label */}
-          <div className={`text-xs mb-1 transition-colors ${
-            isDarkMode ? 'text-gray-400' : 'text-gray-500'
-          }`}>
-            ChatGPT
+        {/* Message bubble */}
+        <div className="flex flex-col items-start gap-1">
+          {/* Sender name and timestamp */}
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs ${
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              {isUser ? "You" : "ChatGPT"}
+            </span>
+            {timestamp && (
+              <span className={`text-[10px] ${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>
+                {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
-          
-          {/* Typing indicator */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className={`px-4 py-3 rounded-2xl rounded-bl-md transition-all ${
-              isDarkMode
-                ? 'bg-gray-800 border border-gray-700'
-                : 'bg-white border border-gray-200 shadow-sm'
+
+          {/* Message content */}
+          <div
+            className={`whitespace-pre-wrap px-4 py-3 rounded-2xl transition-all relative group ${
+              isUser
+                ? isDarkMode
+                  ? "bg-blue-600 text-white"
+                  : "bg-blue-100 text-gray-800"
+                : isDarkMode
+                ? "bg-gray-800 border border-gray-700 text-gray-100"
+                : "bg-white border border-gray-200 text-gray-800 shadow-sm"
             }`}
           >
-            <div className="flex items-center space-x-2">
-              <div className="flex space-x-1">
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className={`w-2 h-2 rounded-full ${
-                      isDarkMode ? 'bg-gray-400' : 'bg-gray-500'
-                    }`}
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.5, 1, 0.5],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      delay: i * 0.2,
-                      ease: "easeInOut",
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          </motion.div>
+            <ReactMarkdown
+              components={{
+                p: ({node, ...props}) => (
+                  <p className="prose dark:prose-invert prose-sm max-w-none" {...props} />
+                ),
+              }}
+            >
+              {escapedContent}
+            </ReactMarkdown>
+
+            {/* Copy button */}
+            {!isUser && (
+              <button
+                onClick={copyToClipboard}
+                className={`absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-300/20 ${
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                <ClipboardIcon className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>

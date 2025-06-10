@@ -266,3 +266,26 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Dark mode via media query */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #212121;
+    --bg-secondary: #2f2f2f;
+    --bg-tertiary: #404040;
+    --text-primary: #ececec;
+    --text-secondary: #c5c5c5;
+    --text-muted: #8e8e8e;
+    --border-light: #4a4a4a;
+    --accent-primary: #10a37f;
+    --accent-hover: #0d8c6c;
+    --user-bg: #10a37f;
+    --assistant-bg: transparent;
+    --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+}
+
+html, body {
+  overflow: auto;
+}
